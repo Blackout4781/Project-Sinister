@@ -1,0 +1,194 @@
+--// Ik its poorly coded Made it late at night and was tired ash \\--
+if game.PlaceId == 14400427869 then
+    local function TournamentLoop()
+        local vu = game:GetService("VirtualUser")
+        game:GetService("Players").LocalPlayer.Idled:connect(function()
+            vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        end)
+        
+            --// From Inf Yeild \\--
+            local GC = getconnections or get_signal_cons
+            local Players = game.Players
+            if GC then
+                for i, v in pairs(GC(Players.LocalPlayer.Idled)) do
+                    if v["Disable"] then
+                        v["Disable"](v)
+                    elseif v["Disconnect"] then
+                        v["Disconnect"](v)
+                    end
+                end
+            else
+                Players.LocalPlayer.Idled:Connect(function()
+                    local VirtualUser = game:GetService("VirtualUser")
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new())
+                end)
+            end
+            
+            local Players = game:GetService("Players")
+            local RunService = game:GetService("RunService")
+            local PlayerGui = Players.LocalPlayer.PlayerGui
+            local TournamentRewards = PlayerGui.Menu.PagesContainer.TournamentResults
+            local lootRewardsBox = TournamentRewards.container.Content:FindFirstChild("lootRewardsBox")
+            local TotalTurniCoins = PlayerGui.Menu.PagesContainer.TournamentShop.container.currency.tournamentPoints
+            local Player = game.Players.LocalPlayer    
+            local Http = game:GetService("HttpService")
+            local TPS = game:GetService("TeleportService")
+            local Api = "https://games.roblox.com/v1/games/"
+            local VIM = game:GetService("VirtualInputManager")
+
+            local function SendTurniInfo()
+                local Players = game:GetService("Players")
+                local PlayerGui = Players.LocalPlayer.PlayerGui
+                local TournamentRewards = PlayerGui.Menu.PagesContainer.TournamentResults
+                local lootRewardsBox = TournamentRewards.container.Content:FindFirstChild("lootRewardsBox")
+                local TotalTurniCoins = PlayerGui.Menu.PagesContainer.TournamentShop.container.currency.tournamentPoints
+
+                local url = settings.Webhook
+                local data = {
+                    ["embeds"] = {
+                        {
+                            ["title"] = "Tournament Notifier",
+                            ["description"] = "Username: ||" .. game.Players.LocalPlayer.Name .. "||",
+                            ["type"] = "rich",
+                            ["color"] = tonumber(0x7269da),
+                        }
+                    }
+                }
+            
+                data.embeds[1].description = data.embeds[1].description .. "\nTournament Reward Coins: " .. lootRewardsBox:FindFirstChild("tournamentCoin").rewardAmount.Text
+                data.embeds[1].description = data.embeds[1].description .. "\nTotal Tournament Coins: " .. TotalTurniCoins.Text
+            
+                local newdata = game:GetService("HttpService"):JSONEncode(data)
+            
+                local headers = {
+                    ["content-type"] = "application/json"
+                }
+            
+                local request = http_request or request or HttpPost or syn.request
+                local abcdef = {Url = url, Body = newdata, Method = "POST", Headers = headers}
+                request(abcdef)
+            end
+            
+            --// From A Random V3rm User \\--
+            function Hop()
+                local _place,_id = game.PlaceId, game.JobId
+                local _servers = Api.._place.."/servers/Public?sortOrder=Desc&limit=10"
+                
+                local function ListServers(cursor)
+                local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+                return Http:JSONDecode(Raw)
+                end
+                
+                local Servers = ListServers()
+                local eligibleServers = {}
+                
+                for _, server in ipairs(Servers.data) do
+                if server.playing >= 6 then
+                    table.insert(eligibleServers, server)
+                end
+                end
+                
+                if #eligibleServers > 0 then
+                local Server = eligibleServers[math.random(1, #eligibleServers)]
+                TPS:TeleportToPlaceInstance(_place, Server.id, Player)
+                else
+                print("No Servers Found")
+                end
+            end
+
+            local hasSentWebhook = false
+            
+            while true do
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+                local character = player.Character
+                local PlayerGui = Players.LocalPlayer.PlayerGui
+
+                if character then
+                    if PlayerGui:FindFirstChild("TitleScreen") then
+                        local events = {"MouseButton1Click", "MouseButton1Down", "Activated"}
+                        for _, event in ipairs(events) do
+                            for _, connection in pairs(getconnections(PlayerGui.TitleScreen.frame.main.holder.play[event])) do
+                                connection:Fire()
+                            end
+                        end
+                    end
+    
+                    task.wait(0.3)
+                end
+            end
+        end
+    
+        local function WebhookLoop()
+            while true do
+                local Players = game:GetService("Players")
+                local PlayerGui = Players.LocalPlayer.PlayerGui
+                local TournamentRewards = PlayerGui.Menu.PagesContainer.TournamentResults
+                local lootRewardsBox = TournamentRewards.container.Content:FindFirstChild("lootRewardsBox")
+                if TournamentRewards.Visible == true and settings.SendWebhook == true and not hasSentWebhook then
+                    if lootRewardsBox:FindFirstChild("tournamentCoin").rewardAmount then
+                        SendTurniInfo()
+                        hasSentWebhook = true
+                    end
+                end
+    
+                task.wait(0.3)
+            end
+        end
+    
+        local function AutoTrainLoop()
+            while true do
+                if settings.AutoTrain == true then
+                    local args = {
+                        [1] = "TrainStat",
+                        [2] = settings.StatToTrain
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Stats/RemoteFunction"):InvokeServer(unpack(args))
+                end
+    
+                task.wait(0.3)
+            end
+        end
+    
+        local function AutoVoteLoop()
+            while true do
+                if settings.AutoVote == true then
+                    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Tournament/RemoteEvent"):FireServer("Vote", settings.Modevote)
+                end
+    
+                task.wait(0.3)
+            end
+        end    
+
+        local function AutoSkillLoop()
+            local VIM = game:GetService("VirtualInputManager")
+            local function Key(bind)
+                pcall(function()
+                    VIM:SendKeyEvent(true, bind, false, game)
+                    wait()
+                    VIM:SendKeyEvent(false, bind, false, game)
+                    wait(0.2)
+                end)
+            end
+
+            while true do
+                if settings.EnableAutoSkill == true then
+                    for _, key in ipairs(settings.Skills) do
+                        Key(key)
+                        task.wait(0.1)
+                    end
+                end
+    
+                task.wait(0.2)
+            end
+        end
+
+    spawn(TournamentLoop)
+    spawn(WebhookLoop)
+    spawn(AutoTrainLoop)
+    spawn(AutoVoteLoop)
+    spawn(AutoSkillLoop)
+end 
